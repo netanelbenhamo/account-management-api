@@ -2,6 +2,7 @@ import express, { Application, Request, Response } from 'express';
 import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
 import { errorHandler } from './middleware/errorHandler';
+import accountRoutes from './modules/accounts/account.routes';
 
 const app: Application = express();
 
@@ -27,8 +28,7 @@ app.get('/health', (_req: Request, res: Response) => {
   res.json({ status: 'ok' });
 });
 
-// ── Routes (modules will be registered here in step 3) ───────────────────────
-// app.use('/api/accounts', accountRoutes);
+app.use('/api/accounts', accountRoutes);
 
 app.use(errorHandler);
 
