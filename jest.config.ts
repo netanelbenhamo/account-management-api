@@ -9,10 +9,8 @@ const config: Config = {
   clearMocks: true,
   testTimeout: 10000,
   setupFiles: ['<rootDir>/src/config/testEnv.ts'],
-  globals: {
-    'ts-jest': {
-      tsconfig: 'tsconfig.test.json',
-    },
+  transform: {
+    '^.+\\.ts$': ['ts-jest', { tsconfig: 'tsconfig.test.json' }],
   },
 };
 
