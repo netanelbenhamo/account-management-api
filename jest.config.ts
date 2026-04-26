@@ -8,12 +8,12 @@ const config: Config = {
   moduleFileExtensions: ['ts', 'js', 'json'],
   clearMocks: true,
   testTimeout: 10000,
+  setupFiles: ['<rootDir>/src/config/testEnv.ts'],
   globals: {
     'ts-jest': {
-      tsconfig: 'tsconfig.json',
+      tsconfig: 'tsconfig.test.json',
     },
   },
-  setupFiles: ['<rootDir>/src/config/testEnv.ts'], // sets NODE_ENV=test before anything loads
 };
 
 export default config;
