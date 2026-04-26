@@ -1,0 +1,29 @@
+{
+  "name": "account-management-api",
+  "version": "1.0.0",
+  "description": "RESTful API for managing bank accounts, supporting deposits, withdrawals, balance inquiries, account blocking, and transaction history.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon --exec ts-node src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/netanelbenhamo/account-management-api.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/netanelbenhamo/account-management-api/issues"
+  },
+  "homepage": "https://github.com/netanelbenhamo/account-management-api#readme",
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "nodemon": "^3.1.14",
+    "ts-node": "^10.9.2",
+    "typescript": "^6.0.3"
+  }
+}
