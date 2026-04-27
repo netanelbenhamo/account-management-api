@@ -3,7 +3,6 @@ import path from 'path';
 import { Pool } from 'pg';
 import dotenv from 'dotenv';
 
-// Determine which env file to use
 const envFile = process.env.NODE_ENV === 'test' ? '.env.test' : '.env';
 dotenv.config({ path: envFile });
 
@@ -24,7 +23,6 @@ const runMigrations = async (includeSeed = false): Promise<void> => {
   const client = await pool.connect();
 
   try {
-    // Create migrations tracking table if it doesn't exist
     await client.query(`
       CREATE TABLE IF NOT EXISTS migrations (
         id         SERIAL PRIMARY KEY,
@@ -33,13 +31,11 @@ const runMigrations = async (includeSeed = false): Promise<void> => {
       )
     `);
 
-    // Get already-applied migrations
     const { rows } = await client.query<{ filename: string }>(
       'SELECT filename FROM migrations'
     );
     const applied = new Set(rows.map((r) => r.filename));
 
-    // Read and sort migration files (001, 002, 003...)
     const files = fs
       .readdirSync(MIGRATIONS_DIR)
       .filter((f) => f.endsWith('.sql') && f !== 'seed.sql')
@@ -65,7 +61,6 @@ const runMigrations = async (includeSeed = false): Promise<void> => {
       }
     }
 
-    // Optionally run seed
     if (includeSeed) {
       const seedPath = path.join(MIGRATIONS_DIR, 'seed.sql');
       if (fs.existsSync(seedPath)) {
@@ -82,7 +77,6 @@ const runMigrations = async (includeSeed = false): Promise<void> => {
   }
 };
 
-// CLI: `ts-node src/db/migrate.ts [--seed]`
 const includeSeed = process.argv.includes('--seed');
 runMigrations(includeSeed).catch((err) => {
   console.error('❌ Migration failed:', err);

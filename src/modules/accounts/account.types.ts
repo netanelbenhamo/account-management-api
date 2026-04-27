@@ -13,7 +13,7 @@ export enum AccountType {
   export interface Account {
     account_id: number;
     person_id: number;
-    balance: string; // pg returns NUMERIC as string — parse when needed
+    balance: string;
     daily_withdrawal_limit: string;
     active_flag: boolean;
     account_type: AccountType;
@@ -23,7 +23,7 @@ export enum AccountType {
   export interface Transaction {
     transaction_id: number;
     account_id: number;
-    value: string; // positive = deposit, negative = withdrawal
+    value: string;
     transaction_date: Date;
   }
   
@@ -45,6 +45,6 @@ export enum AccountType {
   }
   
   export interface StatementQuery {
-    from?: string; // ISO date string YYYY-MM-DD
+    from?: string;
     to?: string;
   }

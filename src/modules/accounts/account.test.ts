@@ -2,8 +2,6 @@ import request from 'supertest';
 import app from '../../app';
 import { clearDatabase, closeDatabase, seedAccount } from '../../db/testHelpers';
 
-// ── Setup / Teardown ──────────────────────────────────────────────────────────
-
 beforeEach(async () => {
   await clearDatabase();
 });
@@ -12,14 +10,8 @@ afterAll(async () => {
   await closeDatabase();
 });
 
-// ── POST /api/accounts ────────────────────────────────────────────────────────
-
 describe('POST /api/accounts', () => {
   it('creates an account successfully', async () => {
-    // First create a person to reference
-    const { person_id } = await seedAccount();
-    await clearDatabase();
-
     const { rows } = await (await import('../../config/db')).pool.query(
       `INSERT INTO persons (name, document, birth_date)
        VALUES ('New User', '111111111', '1995-05-05')
@@ -81,8 +73,6 @@ describe('POST /api/accounts', () => {
   });
 });
 
-// ── GET /api/accounts/:id/balance ─────────────────────────────────────────────
-
 describe('GET /api/accounts/:id/balance', () => {
   it('returns balance for existing account', async () => {
     const { account_id } = await seedAccount({ balance: 750 });
@@ -108,8 +98,6 @@ describe('GET /api/accounts/:id/balance', () => {
   });
 });
 
-// ── POST /api/accounts/:id/deposit ───────────────────────────────────────────
-
 describe('POST /api/accounts/:id/deposit', () => {
   it('deposits successfully and updates balance', async () => {
     const { account_id } = await seedAccount({ balance: 1000 });
@@ -121,7 +109,6 @@ describe('POST /api/accounts/:id/deposit', () => {
     expect(res.status).toBe(201);
     expect(parseFloat(res.body.data.value)).toBe(200);
 
-    // Verify balance was updated
     const balanceRes = await request(app).get(`/api/accounts/${account_id}/balance`);
     expect(balanceRes.body.data.balance).toBe(1200);
   });
@@ -166,8 +153,6 @@ describe('POST /api/accounts/:id/deposit', () => {
   });
 });
 
-// ── POST /api/accounts/:id/withdraw ──────────────────────────────────────────
-
 describe('POST /api/accounts/:id/withdraw', () => {
   it('withdraws successfully and updates balance', async () => {
     const { account_id } = await seedAccount({ balance: 1000, daily_withdrawal_limit: 500 });
@@ -177,7 +162,7 @@ describe('POST /api/accounts/:id/withdraw', () => {
       .send({ value: 200 });
 
     expect(res.status).toBe(201);
-    expect(parseFloat(res.body.data.value)).toBe(-200); // stored as negative
+    expect(parseFloat(res.body.data.value)).toBe(-200);
 
     const balanceRes = await request(app).get(`/api/accounts/${account_id}/balance`);
     expect(balanceRes.body.data.balance).toBe(800);
@@ -200,12 +185,10 @@ describe('POST /api/accounts/:id/withdraw', () => {
       daily_withdrawal_limit: 300,
     });
 
-    // First withdrawal: 200 (within limit)
     await request(app)
       .post(`/api/accounts/${account_id}/withdraw`)
       .send({ value: 200 });
 
-    // Second withdrawal: would bring total to 350 — exceeds 300 limit
     const res = await request(app)
       .post(`/api/accounts/${account_id}/withdraw`)
       .send({ value: 150 });
@@ -244,8 +227,6 @@ describe('POST /api/accounts/:id/withdraw', () => {
   });
 });
 
-// ── PATCH /api/accounts/:id/block ─────────────────────────────────────────────
-
 describe('PATCH /api/accounts/:id/block', () => {
   it('blocks an active account successfully', async () => {
     const { account_id } = await seedAccount();
@@ -271,8 +252,6 @@ describe('PATCH /api/accounts/:id/block', () => {
     expect(res.status).toBe(404);
   });
 });
-
-// ── GET /api/accounts/:id/statement ──────────────────────────────────────────
 
 describe('GET /api/accounts/:id/statement', () => {
   it('returns full transaction history', async () => {
@@ -319,7 +298,7 @@ describe('GET /api/accounts/:id/statement', () => {
     );
 
     expect(res.status).toBe(200);
-    expect(res.body.data).toHaveLength(0); // transaction is today, not before yesterday
+    expect(res.body.data).toHaveLength(0);
   });
 
   it('returns 400 for invalid date format in from param', async () => {
