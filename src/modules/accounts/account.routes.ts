@@ -55,6 +55,8 @@ const controller = new AccountController(service);
  *         description: Account created
  *       400:
  *         description: Validation error
+ *       404:
+ *         description: Person not found
  */
 router.post(
   '/',
@@ -77,6 +79,8 @@ router.post(
  *     responses:
  *       200:
  *         description: Account balance
+ *       400:
+ *         description: Validation error
  *       404:
  *         description: Account not found
  */
@@ -112,6 +116,8 @@ router.get(
  *     responses:
  *       201:
  *         description: Deposit successful
+ *       400:
+ *         description: Validation error
  *       403:
  *         description: Account is blocked
  *       404:
@@ -150,6 +156,8 @@ router.post(
  *     responses:
  *       201:
  *         description: Withdrawal successful
+ *       400:
+ *         description: Validation error
  *       403:
  *         description: Account is blocked
  *       404:
@@ -179,6 +187,8 @@ router.post(
  *     responses:
  *       200:
  *         description: Account blocked
+ *       400:
+ *         description: Validation error
  *       404:
  *         description: Account not found
  *       409:
@@ -217,6 +227,8 @@ router.patch(
  *     responses:
  *       200:
  *         description: List of transactions
+ *       400:
+ *         description: Validation error
  *       404:
  *         description: Account not found
  */

@@ -1,5 +1,5 @@
 import { Pool, PoolClient } from 'pg';
-import { Account, CreateAccountInput, Transaction } from './account.types';
+import { Account, CreateAccountInput, Person, Transaction } from './account.types';
 
 export class AccountRepository {
   constructor(private readonly pool: Pool) {}
@@ -8,6 +8,14 @@ export class AccountRepository {
     const { rows } = await this.pool.query<Account>(
       'SELECT * FROM accounts WHERE account_id = $1',
       [accountId]
+    );
+    return rows[0] ?? null;
+  }
+
+  async findPersonById(personId: number): Promise<Person | null> {
+    const { rows } = await this.pool.query<Person>(
+      'SELECT * FROM persons WHERE person_id = $1',
+      [personId]
     );
     return rows[0] ?? null;
   }
@@ -46,7 +54,6 @@ export class AccountRepository {
     return rows[0] ?? null;
   }
 
-  // Sum of all withdrawals (negative values) made today for this account
   async getTodayWithdrawals(client: PoolClient, accountId: number): Promise<number> {
     const { rows } = await client.query<{ total: string }>(
       `SELECT COALESCE(SUM(value), 0) AS total
@@ -99,7 +106,6 @@ export class AccountRepository {
     return rows;
   }
 
-  // Expose pool.connect() for transactions that need a client
   async getClient(): Promise<PoolClient> {
     return this.pool.connect();
   }

@@ -65,6 +65,20 @@ describe('POST /api/accounts', () => {
 
     expect(res.status).toBe(400);
   });
+
+  it('returns 404 when person does not exist', async () => {
+    const res = await request(app)
+      .post('/api/accounts')
+      .send({
+        person_id: 99999,
+        daily_withdrawal_limit: 300,
+        account_type: 1,
+        initial_balance: 500,
+      });
+
+    expect(res.status).toBe(404);
+    expect(res.body.message).toBe('Person not found');
+  });
 });
 
 // ── GET /api/accounts/:id/balance ─────────────────────────────────────────────

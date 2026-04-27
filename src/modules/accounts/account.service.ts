@@ -1,4 +1,5 @@
 import { AppError } from '../../utils/AppError';
+import { HTTP_STATUS } from '../../constants/httpStatus';
 import { AccountRepository } from './account.repository';
 import { Account, CreateAccountInput, Transaction } from './account.types';
 
@@ -6,12 +7,14 @@ export class AccountService {
   constructor(private readonly repo: AccountRepository) {}
 
   async createAccount(input: CreateAccountInput): Promise<Account> {
+    const person = await this.repo.findPersonById(input.person_id);
+    if (!person) throw new AppError('Person not found', HTTP_STATUS.NOT_FOUND);
     return this.repo.create(input);
   }
 
   async getBalance(accountId: number): Promise<{ account_id: number; balance: number }> {
     const account = await this.repo.findById(accountId);
-    if (!account) throw new AppError('Account not found', 404);
+    if (!account) throw new AppError('Account not found', HTTP_STATUS.NOT_FOUND);
 
     return {
       account_id: account.account_id,
@@ -32,8 +35,8 @@ export class AccountService {
       );
       const account = rows[0];
 
-      if (!account) throw new AppError('Account not found', 404);
-      if (!account.active_flag) throw new AppError('Account is blocked', 403);
+      if (!account) throw new AppError('Account not found', HTTP_STATUS.NOT_FOUND);
+      if (!account.active_flag) throw new AppError('Account is blocked', HTTP_STATUS.FORBIDDEN);
 
       const newBalance = parseFloat(account.balance) + value;
       await this.repo.updateBalance(client, accountId, newBalance);
@@ -62,15 +65,15 @@ export class AccountService {
       );
       const account = rows[0];
 
-      if (!account) throw new AppError('Account not found', 404);
-      if (!account.active_flag) throw new AppError('Account is blocked', 403);
+      if (!account) throw new AppError('Account not found', HTTP_STATUS.NOT_FOUND);
+      if (!account.active_flag) throw new AppError('Account is blocked', HTTP_STATUS.FORBIDDEN);
 
       const currentBalance = parseFloat(account.balance);
       const dailyLimit = parseFloat(account.daily_withdrawal_limit);
 
       // Check sufficient funds
       if (value > currentBalance) {
-        throw new AppError('Insufficient funds', 422);
+        throw new AppError('Insufficient funds', HTTP_STATUS.UNPROCESSABLE_ENTITY);
       }
 
       // Check daily withdrawal limit
@@ -79,7 +82,7 @@ export class AccountService {
         throw new AppError(
           `Daily withdrawal limit of ${dailyLimit} exceeded. ` +
             `Already withdrawn: ${todayWithdrawals}, requested: ${value}`,
-          422
+          HTTP_STATUS.UNPROCESSABLE_ENTITY
         );
       }
 
@@ -101,8 +104,8 @@ export class AccountService {
 
   async blockAccount(accountId: number): Promise<Account> {
     const account = await this.repo.findById(accountId);
-    if (!account) throw new AppError('Account not found', 404);
-    if (!account.active_flag) throw new AppError('Account is already blocked', 409);
+    if (!account) throw new AppError('Account not found', HTTP_STATUS.NOT_FOUND);
+    if (!account.active_flag) throw new AppError('Account is already blocked', HTTP_STATUS.CONFLICT);
 
     const blocked = await this.repo.block(accountId);
     return blocked!;
@@ -114,7 +117,7 @@ export class AccountService {
     to?: string
   ): Promise<Transaction[]> {
     const account = await this.repo.findById(accountId);
-    if (!account) throw new AppError('Account not found', 404);
+    if (!account) throw new AppError('Account not found', HTTP_STATUS.NOT_FOUND);
 
     return this.repo.getStatement(accountId, from, to);
   }
