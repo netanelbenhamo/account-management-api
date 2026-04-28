@@ -82,9 +82,11 @@ export class AccountRepository {
 
   async getStatement(
     accountId: number,
+    page: number,
+    limit: number,
     from?: string,
     to?: string
-  ): Promise<Transaction[]> {
+  ): Promise<{ rows: Transaction[]; total: number }> {
     const conditions: string[] = ['account_id = $1'];
     const params: (number | string)[] = [accountId];
 
@@ -97,13 +99,26 @@ export class AccountRepository {
       conditions.push(`transaction_date <= $${params.length}`);
     }
 
-    const { rows } = await this.pool.query<Transaction>(
-      `SELECT * FROM transactions
-       WHERE ${conditions.join(' AND ')}
-       ORDER BY transaction_date DESC, transaction_id DESC`,
+    const whereClause = conditions.join(' AND ');
+
+    const { rows: countRows } = await this.pool.query<{ count: string }>(
+      `SELECT COUNT(*) FROM transactions WHERE ${whereClause}`,
       params
     );
-    return rows;
+    const total = parseInt(countRows[0].count);
+
+    const offset = (page - 1) * limit;
+    params.push(limit, offset);
+
+    const { rows } = await this.pool.query<Transaction>(
+      `SELECT * FROM transactions
+       WHERE ${whereClause}
+       ORDER BY transaction_date DESC, transaction_id DESC
+       LIMIT $${params.length - 1} OFFSET $${params.length}`,
+      params
+    );
+
+    return { rows, total };
   }
 
   async getClient(): Promise<PoolClient> {

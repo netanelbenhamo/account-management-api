@@ -60,9 +60,17 @@ export class AccountController {
   getStatement = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const accountId = parseInt(req.params.id);
-      const { from, to } = req.query as StatementQuery;
-      const transactions = await this.service.getStatement(accountId, from, to);
-      res.json({ status: 'success', data: transactions });
+      const { from, to, page, limit } = req.query as StatementQuery;
+
+      const result = await this.service.getStatement(
+        accountId,
+        page ? parseInt(page) : undefined,
+        limit ? parseInt(limit) : undefined,
+        from,
+        to
+      );
+
+      res.json({ status: 'success', ...result });
     } catch (err) {
       next(err);
     }

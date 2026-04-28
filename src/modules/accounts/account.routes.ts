@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { pool } from '../../config/db';
 import { validate } from '../../middleware/validate';
+import { transactionLimiter } from '../../middleware/rateLimiter';
 import { AccountRepository } from './account.repository';
 import { AccountService } from './account.service';
 import { AccountController } from './account.controller';
@@ -14,7 +15,6 @@ import {
 
 const router = Router();
 
-// Wire up dependencies
 const repository = new AccountRepository(pool);
 const service = new AccountService(repository);
 const controller = new AccountController(service);
@@ -125,6 +125,7 @@ router.get(
  */
 router.post(
   '/:id/deposit',
+  transactionLimiter,
   validate('params', accountIdParamSchema),
   validate('body', depositSchema),
   controller.deposit
@@ -167,6 +168,7 @@ router.post(
  */
 router.post(
   '/:id/withdraw',
+  transactionLimiter,
   validate('params', accountIdParamSchema),
   validate('body', withdrawSchema),
   controller.withdraw
@@ -224,6 +226,18 @@ router.patch(
  *           type: string
  *           format: date
  *         description: End date (YYYY-MM-DD)
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *         description: Results per page (max 100)
  *     responses:
  *       200:
  *         description: List of transactions

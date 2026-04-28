@@ -37,4 +37,12 @@ export const statementQuerySchema = z.object({
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, 'to must be a valid date (YYYY-MM-DD)')
     .optional(),
+  page: z
+    .string()
+    .regex(/^\d+$/, 'page must be a positive integer')
+    .optional(),
+  limit: z
+    .string()
+    .regex(/^\d+$/, 'limit must be a positive integer')
+    .optional(),
 });

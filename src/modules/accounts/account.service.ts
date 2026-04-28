@@ -1,8 +1,12 @@
+import { PoolClient } from 'pg';
 import { AppError } from '../../utils/AppError';
 import { HTTP_STATUS } from '../../constants/httpStatus';
-import { PoolClient } from 'pg';
 import { AccountRepository } from './account.repository';
-import { Account, CreateAccountInput, Transaction } from './account.types';
+import { Account, CreateAccountInput, PaginatedResult, Transaction } from './account.types';
+
+const DEFAULT_PAGE = 1;
+const DEFAULT_LIMIT = 20;
+const MAX_LIMIT = 100;
 
 export class AccountService {
   constructor(private readonly repo: AccountRepository) {}
@@ -15,7 +19,6 @@ export class AccountService {
 
   async getBalance(accountId: number): Promise<{ account_id: number; balance: number }> {
     const account = await this.getAccountOrThrow(accountId);
-
     return {
       account_id: account.account_id,
       balance: parseFloat(account.balance),
@@ -44,20 +47,36 @@ export class AccountService {
 
   async blockAccount(accountId: number): Promise<Account> {
     const account = await this.getAccountOrThrow(accountId);
-    if (!account.active_flag) throw new AppError('Account is already blocked', HTTP_STATUS.CONFLICT);
-
+    if (!account.active_flag) {
+      throw new AppError('Account is already blocked', HTTP_STATUS.CONFLICT);
+    }
     const blocked = await this.repo.block(accountId);
     return blocked!;
   }
 
   async getStatement(
     accountId: number,
+    page = DEFAULT_PAGE,
+    limit = DEFAULT_LIMIT,
     from?: string,
     to?: string
-  ): Promise<Transaction[]> {
+  ): Promise<PaginatedResult<Transaction>> {
     await this.getAccountOrThrow(accountId);
 
-    return this.repo.getStatement(accountId, from, to);
+    const safePage = Math.max(1, page);
+    const safeLimit = Math.min(Math.max(1, limit), MAX_LIMIT);
+
+    const { rows, total } = await this.repo.getStatement(accountId, safePage, safeLimit, from, to);
+
+    return {
+      data: rows,
+      pagination: {
+        total,
+        page: safePage,
+        limit: safeLimit,
+        totalPages: Math.ceil(total / safeLimit),
+      },
+    };
   }
 
   private async getAccountOrThrow(accountId: number): Promise<Account> {
