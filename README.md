@@ -315,6 +315,8 @@ src/
 ├── config/
 │   ├── db.ts                  # PostgreSQL pool
 │   └── testEnv.ts             # Sets NODE_ENV=test for Jest
+├── constants/
+│   └── httpStatus.ts          # http status consts
 ├── db/
 │   ├── migrate.ts             # Migration runner
 │   ├── testHelpers.ts         # Test DB utilities
@@ -322,6 +324,7 @@ src/
 │       ├── 001_create_persons.sql
 │       ├── 002_create_accounts.sql
 │       ├── 003_create_transactions.sql
+│       ├── 004_add_indexes.sql
 │       └── seed.sql
 ├── middleware/
 │   ├── errorHandler.ts        # Global error handler
