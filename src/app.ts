@@ -1,16 +1,23 @@
 import express, { Application, Request, Response } from 'express';
+import helmet from 'helmet';
 import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
 import { errorHandler } from './middleware/errorHandler';
 import { logger } from './middleware/logger';
+import { requestId } from './middleware/requestId';
 import { generalLimiter } from './middleware/rateLimiter';
 import accountRoutes from './modules/accounts/account.routes';
 
 const app: Application = express();
 
-app.use(express.json());
+app.use(helmet());
+
+app.use(requestId);
 app.use(logger);
+
 app.use(generalLimiter);
+
+app.use(express.json());
 
 const swaggerSpec = swaggerJsdoc({
   definition: {

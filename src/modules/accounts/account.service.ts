@@ -1,3 +1,4 @@
+import Decimal from 'decimal.js';
 import { PoolClient } from 'pg';
 import { AppError } from '../../utils/AppError';
 import { HTTP_STATUS } from '../../constants/httpStatus';
@@ -21,13 +22,13 @@ export class AccountService {
     const account = await this.getAccountOrThrow(accountId);
     return {
       account_id: account.account_id,
-      balance: parseFloat(account.balance),
+      balance: new Decimal(account.balance).toNumber(),
     };
   }
 
   async deposit(accountId: number, value: number): Promise<Transaction> {
     return this.executeAccountTransaction(accountId, async (client, account) => {
-      const newBalance = parseFloat(account.balance) + value;
+      const newBalance = new Decimal(account.balance).plus(value).toNumber();
       await this.repo.updateBalance(client, accountId, newBalance);
       return this.repo.insertTransaction(client, accountId, value);
     });
@@ -35,13 +36,13 @@ export class AccountService {
 
   async withdraw(accountId: number, value: number): Promise<Transaction> {
     return this.executeAccountTransaction(accountId, async (client, account) => {
-      const currentBalance = parseFloat(account.balance);
+      const currentBalance = new Decimal(account.balance);
       this.ensureSufficientFunds(value, currentBalance);
       await this.ensureDailyWithdrawalLimit(client, accountId, value, account);
 
-      const newBalance = currentBalance - value;
+      const newBalance = currentBalance.minus(value).toNumber();
       await this.repo.updateBalance(client, accountId, newBalance);
-      return this.repo.insertTransaction(client, accountId, -value);
+      return this.repo.insertTransaction(client, accountId, new Decimal(value).negated().toNumber());
     });
   }
 
@@ -123,8 +124,8 @@ export class AccountService {
     }
   }
 
-  private ensureSufficientFunds(withdrawValue: number, currentBalance: number): void {
-    if (withdrawValue > currentBalance) {
+  private ensureSufficientFunds(withdrawValue: number, currentBalance: Decimal): void {
+    if (new Decimal(withdrawValue).greaterThan(currentBalance)) {
       throw new AppError('Insufficient funds', HTTP_STATUS.UNPROCESSABLE_ENTITY);
     }
   }
@@ -135,10 +136,10 @@ export class AccountService {
     value: number,
     account: Account
   ): Promise<void> {
-    const dailyLimit = parseFloat(account.daily_withdrawal_limit);
-    const todayWithdrawals = await this.repo.getTodayWithdrawals(client, accountId);
+    const dailyLimit = new Decimal(account.daily_withdrawal_limit);
+    const todayWithdrawals = new Decimal(await this.repo.getTodayWithdrawals(client, accountId));
 
-    if (todayWithdrawals + value > dailyLimit) {
+    if (todayWithdrawals.plus(value).greaterThan(dailyLimit)) {
       throw new AppError(
         `Daily withdrawal limit of ${dailyLimit} exceeded. ` +
           `Already withdrawn: ${todayWithdrawals}, requested: ${value}`,

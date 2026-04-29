@@ -17,14 +17,14 @@ export interface Account {
   daily_withdrawal_limit: string;
   active_flag: boolean;
   account_type: AccountType;
-  create_date: Date;
+  create_date: string;
 }
 
 export interface Transaction {
   transaction_id: number;
   account_id: number;
   value: string;
-  transaction_date: Date;
+  transaction_date: string;
 }
 
 export interface PaginatedResult<T> {

@@ -58,15 +58,10 @@ describe('POST /api/accounts', () => {
     expect(res.status).toBe(400);
   });
 
-  it('returns 404 when person does not exist', async () => {
+  it('returns 404 for non-existent person_id', async () => {
     const res = await request(app)
       .post('/api/accounts')
-      .send({
-        person_id: 99999,
-        daily_withdrawal_limit: 300,
-        account_type: 1,
-        initial_balance: 500,
-      });
+      .send({ person_id: 99999, daily_withdrawal_limit: 300, account_type: 1 });
 
     expect(res.status).toBe(404);
     expect(res.body.message).toBe('Person not found');
@@ -180,14 +175,9 @@ describe('POST /api/accounts/:id/withdraw', () => {
   });
 
   it('returns 422 when daily withdrawal limit is exceeded', async () => {
-    const { account_id } = await seedAccount({
-      balance: 2000,
-      daily_withdrawal_limit: 300,
-    });
+    const { account_id } = await seedAccount({ balance: 2000, daily_withdrawal_limit: 300 });
 
-    await request(app)
-      .post(`/api/accounts/${account_id}/withdraw`)
-      .send({ value: 200 });
+    await request(app).post(`/api/accounts/${account_id}/withdraw`).send({ value: 200 });
 
     const res = await request(app)
       .post(`/api/accounts/${account_id}/withdraw`)
@@ -315,5 +305,51 @@ describe('GET /api/accounts/:id/statement', () => {
     const res = await request(app).get('/api/accounts/99999/statement');
 
     expect(res.status).toBe(404);
+  });
+
+  it('returns paginated results with metadata', async () => {
+    const { account_id } = await seedAccount({ balance: 5000, daily_withdrawal_limit: 5000 });
+
+    for (let i = 0; i < 5; i++) {
+      await request(app).post(`/api/accounts/${account_id}/deposit`).send({ value: 10 });
+    }
+
+    const res = await request(app).get(
+      `/api/accounts/${account_id}/statement?page=1&limit=2`
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(2);
+    expect(res.body.pagination.total).toBe(5);
+    expect(res.body.pagination.totalPages).toBe(3);
+    expect(res.body.pagination.page).toBe(1);
+    expect(res.body.pagination.limit).toBe(2);
+  });
+
+  it('returns second page correctly', async () => {
+    const { account_id } = await seedAccount({ balance: 5000, daily_withdrawal_limit: 5000 });
+
+    for (let i = 0; i < 5; i++) {
+      await request(app).post(`/api/accounts/${account_id}/deposit`).send({ value: 10 });
+    }
+
+    const res = await request(app).get(
+      `/api/accounts/${account_id}/statement?page=2&limit=2`
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(2);
+    expect(res.body.pagination.page).toBe(2);
+  });
+
+  it('caps limit at 100', async () => {
+    const { account_id } = await seedAccount();
+
+    const res = await request(app).get(
+      `/api/accounts/${account_id}/statement?limit=999`
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.body.pagination.limit).toBe(100);
   });
 });

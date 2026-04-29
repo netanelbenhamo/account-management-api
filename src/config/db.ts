@@ -15,6 +15,9 @@ export const pool = new Pool({
   database: isTest
     ? `${process.env.DB_NAME}_test`
     : process.env.DB_NAME || 'account_management',
+  max: Number(process.env.DB_POOL_MAX) || 20,
+  idleTimeoutMillis: Number(process.env.DB_IDLE_TIMEOUT) || 30_000,
+  connectionTimeoutMillis: Number(process.env.DB_CONNECTION_TIMEOUT) || 2_000,
 });
 
 pool.on('error', (err) => {

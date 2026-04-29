@@ -6,7 +6,16 @@ export class AccountRepository {
 
   async findById(accountId: number): Promise<Account | null> {
     const { rows } = await this.pool.query<Account>(
-      'SELECT * FROM accounts WHERE account_id = $1',
+      `SELECT
+         account_id,
+         person_id,
+         balance,
+         daily_withdrawal_limit,
+         active_flag,
+         account_type,
+         create_date::text AS create_date
+       FROM accounts
+       WHERE account_id = $1`,
       [accountId]
     );
     return rows[0] ?? null;
@@ -22,15 +31,18 @@ export class AccountRepository {
 
   async create(input: CreateAccountInput): Promise<Account> {
     const { rows } = await this.pool.query<Account>(
-      `INSERT INTO accounts (person_id, balance, daily_withdrawal_limit, active_flag, account_type)
+      `INSERT INTO accounts
+         (person_id, balance, daily_withdrawal_limit, active_flag, account_type)
        VALUES ($1, $2, $3, true, $4)
-       RETURNING *`,
-      [
-        input.person_id,
-        input.initial_balance ?? 0,
-        input.daily_withdrawal_limit,
-        input.account_type,
-      ]
+       RETURNING
+         account_id,
+         person_id,
+         balance,
+         daily_withdrawal_limit,
+         active_flag,
+         account_type,
+         create_date::text AS create_date`,
+      [input.person_id, input.initial_balance ?? 0, input.daily_withdrawal_limit, input.account_type]
     );
     return rows[0];
   }
@@ -48,7 +60,17 @@ export class AccountRepository {
 
   async block(accountId: number): Promise<Account | null> {
     const { rows } = await this.pool.query<Account>(
-      'UPDATE accounts SET active_flag = false WHERE account_id = $1 RETURNING *',
+      `UPDATE accounts
+         SET active_flag = false
+       WHERE account_id = $1
+       RETURNING
+         account_id,
+         person_id,
+         balance,
+         daily_withdrawal_limit,
+         active_flag,
+         account_type,
+         create_date::text AS create_date`,
       [accountId]
     );
     return rows[0] ?? null;
@@ -74,7 +96,11 @@ export class AccountRepository {
     const { rows } = await client.query<Transaction>(
       `INSERT INTO transactions (account_id, value)
        VALUES ($1, $2)
-       RETURNING *`,
+       RETURNING
+         transaction_id,
+         account_id,
+         value,
+         transaction_date::text AS transaction_date`,
       [accountId, value]
     );
     return rows[0];
@@ -111,7 +137,12 @@ export class AccountRepository {
     params.push(limit, offset);
 
     const { rows } = await this.pool.query<Transaction>(
-      `SELECT * FROM transactions
+      `SELECT
+         transaction_id,
+         account_id,
+         value,
+         transaction_date::text AS transaction_date
+       FROM transactions
        WHERE ${whereClause}
        ORDER BY transaction_date DESC, transaction_id DESC
        LIMIT $${params.length - 1} OFFSET $${params.length}`,
