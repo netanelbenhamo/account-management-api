@@ -74,6 +74,9 @@ DB_PORT=5432
 DB_USER=postgres
 DB_PASSWORD=postgres
 DB_NAME=account_management
+DB_POOL_MAX=20
+DB_IDLE_TIMEOUT=30000
+DB_CONNECTION_TIMEOUT=2000
 ```
 
 For the test database, create `.env.test`:
@@ -85,6 +88,9 @@ DB_PORT=5433
 DB_USER=postgres
 DB_PASSWORD=postgres
 DB_NAME=account_management
+DB_POOL_MAX=20
+DB_IDLE_TIMEOUT=30000
+DB_CONNECTION_TIMEOUT=2000
 ```
 
 > Note: `DB_NAME` in `.env.test` does **not** include `_test` — the app appends it automatically when `NODE_ENV=test`.
@@ -132,6 +138,9 @@ Swagger UI docs at `http://localhost:3000/docs`.
 | `DB_USER` | PostgreSQL user | `postgres` |
 | `DB_PASSWORD` | PostgreSQL password | `postgres` |
 | `DB_NAME` | PostgreSQL database name | `account_management` |
+| `DB_POOL_MAX` | Max pg pool connections | `20` |
+| `DB_IDLE_TIMEOUT` | Idle client timeout (ms) | `30000` |
+| `DB_CONNECTION_TIMEOUT` | Connection timeout (ms) | `2000` |
 
 ---
 
@@ -155,6 +164,11 @@ npm test
 ```
 
 Tests run against the isolated test database on port `5433`. Each test clears all data before running to ensure full isolation.
+
+Notes for test output and middleware:
+- `NODE_ENV=test` disables request logging (see `src/middleware/logger.ts`) to keep Jest output clean.
+- Rate limiting is disabled in tests (see `src/middleware/rateLimiter.ts`) so integration tests aren't blocked by request quotas.
+- Request IDs are supported; if you pass `X-Request-Id`, the logger will include it.
 
 ```bash
 npm run test:watch   # watch mode
@@ -238,6 +252,8 @@ GET /api/accounts/:id/statement?from=2026-01-01&to=2026-12-31
 |-------------|--------|-------------|
 | `from` | `YYYY-MM-DD` | Start date (inclusive) |
 | `to` | `YYYY-MM-DD` | End date (inclusive) |
+| `page` | integer | Page number (default `1`) |
+| `limit` | integer | Results per page (default `20`, max `100`) |
 
 ---
 
@@ -273,6 +289,9 @@ Validation errors:
 }
 ```
 
+Date fields:
+- `create_date` and `transaction_date` are returned as `YYYY-MM-DD` strings (to avoid timezone-related day shifts).
+
 ---
 
 ## Business Rules
@@ -306,7 +325,10 @@ src/
 │       └── seed.sql
 ├── middleware/
 │   ├── errorHandler.ts        # Global error handler
-│   └── validate.ts            # Zod validation middleware
+│   ├── logger.ts              # HTTP request logging (morgan)
+│   ├── rateLimiter.ts         # express-rate-limit (noop in tests)
+│   ├── requestId.ts           # Ensures X-Request-Id exists
+│   └── validate.ts           # Zod validation middleware
 ├── modules/
 │   └── accounts/
 │       ├── account.types.ts

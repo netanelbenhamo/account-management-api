@@ -90,6 +90,9 @@ HTTP Request
                                   └──────────────────────────────────┘
 ```
 
+### Date Serialization
+`create_date` and `transaction_date` are stored in PostgreSQL as `DATE` (no time component), but the API returns them as `YYYY-MM-DD` strings to avoid timezone-related day shifts when JSON-serializing.
+
 ### Design Decisions
 
 **Signed transaction values** — deposits are stored as positive numbers, withdrawals as negative. This eliminates the need for a `type` column and makes balance recalculation a simple `SUM(value)`.
@@ -148,8 +151,9 @@ This check runs inside the same `SELECT FOR UPDATE` transaction, making it safe 
 ```
 POST /api/accounts/1/withdraw  { "value": 200 }
 
-1. Express router matches path → applies param validation (Zod)
-2. Zod validates request body → rejects with 400 if invalid
+0. Global middlewares run: `helmet()`, `requestId` (X-Request-Id), `logger` (morgan), `generalLimiter`, `express.json()`
+1. Routes apply `transactionLimiter` (withdraw/deposit) (noop in tests)
+2. Zod validates params/body → rejects with 400 if invalid
 3. Controller extracts accountId and value → calls service.withdraw()
 4. Service acquires DB client → BEGIN transaction
 5. SELECT FOR UPDATE → locks account row
@@ -170,4 +174,4 @@ Each test is fully isolated:
 - `seedAccount()` helper creates a fresh person + account per test
 - No mocking — tests exercise the full stack from HTTP to DB
 
-**Coverage:** 27 tests across all 6 endpoints covering happy paths, all business rule violations, validation errors, and edge cases.
+**Coverage:** 31 tests across all 6 endpoints covering happy paths, all business rule violations, validation errors, and edge cases.
